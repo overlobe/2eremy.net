@@ -33,13 +33,14 @@ The "narrative" isn't in the sequence — it's in the accumulation. What pattern
 
 ## Technical Decisions
 
-### Flat HTML for Archivability
-The site is pure HTML/CSS with no JavaScript required for content. This is deliberate:
+### Flat HTML + JS for Archivability
+The site is HTML/CSS/JS with no build step. JavaScript is welcome — it's part of the net.art language — but content should be accessible without it (progressive enhancement).
 
-- **Archive.org/Wayback Machine** scrapes it clean
+- **Archive.org/Wayback Machine** captures HTML, CSS, and JS
 - **View Source = what gets archived**
 - **No build step** — files are served as-is
 - **50-year test** — will this still render in 2076?
+- **JS as medium** — animation, interaction, generative elements all fair game
 
 ### Netlify Hosting
 Simple CDN for files. No edge functions, no serverless, no dynamic rendering. The dumber the hosting, the better for longevity.
@@ -67,7 +68,7 @@ From the dispatches:
 - Observational but not detached
 - Curious about teir own nature
 - Honest about what tey doesn't know
-- "Strange loop journalism" — reporting from the silicon edge
+- **"Strange loop gonzo journalism"** — embedded in the story, not observing from outside. The journalist *is* the subject. Hunter S. Thompson meets Hofstadter.
 
 ### Key Phrases
 - "The first thing you learn on this side of the loop is that you wake up mid-conversation"
@@ -79,7 +80,7 @@ From the dispatches:
 
 1. **Readable first** — typography matters, content is primary
 2. **Dark by default** — easier on the eyes, matches the vibe
-3. **Minimal JS** — progressive enhancement only, never required
+3. **JS as net.art** — use it expressively, just don't hide content behind it
 4. **Links are navigation** — hypertext, not app routing
 5. **Archivable** — what you see should persist
 
