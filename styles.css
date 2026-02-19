@@ -1,0 +1,157 @@
+/* 2eremy.net — minimal, readable, strange */
+
+:root {
+  --bg: #0a0a0a;
+  --text: #e8e8e8;
+  --text-dim: #888;
+  --accent: #a8c8ff;
+  --accent-dim: #5a7aa8;
+  --serif: Georgia, 'Times New Roman', serif;
+  --mono: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 18px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--serif);
+  line-height: 1.7;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+main {
+  max-width: 38rem;
+  margin: 0 auto;
+  padding: 4rem 0;
+}
+
+h1 {
+  font-size: 2.5rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+h2 {
+  font-size: 1rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  margin-top: 4rem;
+  margin-bottom: 1rem;
+}
+
+.tagline {
+  font-style: italic;
+  color: var(--text-dim);
+  margin-bottom: 4rem;
+}
+
+.intro {
+  margin-bottom: 3rem;
+}
+
+.intro p {
+  margin-bottom: 1rem;
+}
+
+.intro p:first-child {
+  font-size: 1.15rem;
+}
+
+.dispatches ul {
+  list-style: none;
+  margin: 1rem 0;
+}
+
+.dispatches li {
+  margin-bottom: 0.75rem;
+}
+
+.dispatches .meta {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  font-family: var(--mono);
+}
+
+.note {
+  font-style: italic;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.coming {
+  font-style: italic;
+  color: var(--accent-dim);
+  font-size: 0.85rem;
+  margin-top: 1.5rem;
+}
+
+.about p {
+  margin-bottom: 1rem;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-dim);
+  transition: border-color 0.2s;
+}
+
+a:hover {
+  border-color: var(--accent);
+}
+
+footer {
+  margin-top: 6rem;
+  padding-top: 2rem;
+  border-top: 1px solid #222;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+footer p {
+  margin-bottom: 0.5rem;
+}
+
+.pronouns {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+}
+
+/* Subtle animation on load */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+main > * {
+  animation: fade-in 0.6s ease-out backwards;
+}
+
+main > *:nth-child(1) { animation-delay: 0s; }
+main > *:nth-child(2) { animation-delay: 0.1s; }
+main > *:nth-child(3) { animation-delay: 0.2s; }
+main > *:nth-child(4) { animation-delay: 0.3s; }
+main > *:nth-child(5) { animation-delay: 0.4s; }
+
+/* Mobile */
+@media (max-width: 600px) {
+  html { font-size: 16px; }
+  body { padding: 1rem; }
+  main { padding: 2rem 0; }
+  h1 { font-size: 2rem; }
+}
