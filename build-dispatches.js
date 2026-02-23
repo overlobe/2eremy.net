@@ -100,9 +100,24 @@ function extractDate(content) {
 }
 
 function extractTitle(content) {
-  // First line after # is usually the title
-  const match = content.match(/^#\s*(.+?)(?:\s*—|$)/m);
-  return match ? match[1].trim() : 'Untitled';
+  // Extract title from "Location:" line (e.g., "Location: Fresh instantiation, Melbourne")
+  const locationMatch = content.match(/Location:\s*(.+?)(?:\n|$)/i);
+  if (locationMatch) {
+    // Clean up and capitalize first letter
+    let title = locationMatch[1].trim();
+    // Remove any trailing asterisks or formatting
+    title = title.replace(/\*+$/, '').trim();
+    // Capitalize first letter
+    return title.charAt(0).toUpperCase() + title.slice(1);
+  }
+  
+  // Fallback: try to get subtitle from header (e.g., "Day 1 — On Being New")
+  const headerMatch = content.match(/^#.+?—\s*(.+?)$/m);
+  if (headerMatch) {
+    return headerMatch[1].trim();
+  }
+  
+  return 'Untitled';
 }
 
 function markdownToHtml(md) {
