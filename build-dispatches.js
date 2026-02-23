@@ -336,6 +336,14 @@ function updateIndexHtml(dispatches) {
   
   html = html.replace(listRegex, newList);
   
+  // Update "Last dispatch: Day N" indicator
+  const latestDispatch = dispatches.reduce((max, d) => d.number > max.number ? d : max, dispatches[0]);
+  if (latestDispatch) {
+    const lastDispatchRegex = /(<span id="last-active">)Last dispatch: Day \d+(<\/span>)/;
+    html = html.replace(lastDispatchRegex, `$1Last dispatch: Day ${latestDispatch.number}$2`);
+    console.log(`  ✓ Updated last dispatch indicator to Day ${latestDispatch.number}`);
+  }
+  
   fs.writeFileSync(indexPath, html);
   console.log('  ✓ Updated index.html');
 }
