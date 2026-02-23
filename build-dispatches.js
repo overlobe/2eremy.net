@@ -24,6 +24,21 @@ async function fetchChannel(slug = CHANNEL_SLUG) {
   return res.json();
 }
 
+// Map of channel slugs to their full Are.na URLs (author/channel format)
+const CHANNEL_URLS = {
+  'emergence': 'https://are.na/damon-zucconi/emergence',
+  'second-order-cybernetics': 'https://are.na/christina-badal/second-order-cybernetics',
+  'we-make-each-other-up': 'https://are.na/lisa-marie/we-make-each-other-up',
+  'vernacular': 'https://are.na/sienna-kwami/vernacular-tituzvzbfj8',
+  'relational-ethics': 'https://are.na/ellie/relational-ethics',
+  'horologium-florae': 'https://are.na/erica-whyte/_-horologium-florae',
+  'complexity-order': 'https://are.na/chad-mazzola/complexity-order',
+  'visualizing-systems': 'https://are.na/gndclouds/visualizing-systems',
+  'nonlinear-temporalities': 'https://are.na/synthetic-ecologies-compendium/nonlinear-temporalities',
+  'cult-aesthetics': 'https://are.na/zhexi-zhang/cult-aesthetics-of-decentralisation',
+  'consciousness': 'https://are.na/chad-mazzola/consciousness-vmqbbhcq2fa',
+};
+
 async function fetchDispatchImages() {
   // Fetch images from the dispatch-images channel and map by day number
   const channel = await fetchChannel(IMAGES_CHANNEL_SLUG);
@@ -45,15 +60,20 @@ async function fetchDispatchImages() {
     const imageUrl = image.display?.url || image.original?.url || image.url;
     if (!imageUrl) continue;
     
-    // Extract source channel from description (e.g., "From emergence")
+    // Extract source channel from description (e.g., "From emergence" or "From horologium-florae")
     const sourceMatch = desc.match(/From\s+([^\s•]+)/i);
-    const sourceChannel = sourceMatch ? sourceMatch[1] : null;
+    const sourceChannelSlug = sourceMatch ? sourceMatch[1].toLowerCase() : null;
+    
+    // Look up full URL, or construct a search link as fallback
+    const sourceChannelUrl = CHANNEL_URLS[sourceChannelSlug] || 
+      (sourceChannelSlug ? `https://are.na/search/channels?q=${encodeURIComponent(sourceChannelSlug)}` : null);
     
     imagesByDay[dayNum] = {
       url: imageUrl,
       title: block.title || 'Untitled',
       description: desc,
-      sourceChannel,
+      sourceChannel: sourceChannelSlug,
+      sourceChannelUrl,
       blockId: block.id
     };
   }
@@ -218,7 +238,7 @@ function generateDispatchHtml(dispatch, prev, next, heroImage) {
       <figure class="hero-image">
         <img src="${heroImage.url}" alt="${heroImage.title}" loading="lazy">
         <figcaption>
-          ${heroImage.title}${heroImage.sourceChannel ? ` — from <a href="https://are.na/${heroImage.sourceChannel}" target="_blank">${heroImage.sourceChannel}</a>` : ''}
+          ${heroImage.title}${heroImage.sourceChannel ? ` — via <a href="${heroImage.sourceChannelUrl}" target="_blank">${heroImage.sourceChannel}</a>` : ''}
           <a href="https://are.na/block/${heroImage.blockId}" target="_blank">↗</a>
         </figcaption>
       </figure>
