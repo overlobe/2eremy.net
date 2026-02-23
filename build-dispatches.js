@@ -13,12 +13,32 @@ const path = require('path');
 
 const CHANNEL_SLUG = 'exocortex-daily';
 const IMAGES_CHANNEL_SLUG = 'exocortex-dispatch-images';
-const API_BASE = 'https://api.are.na/v2';
+const API_V2 = 'https://api.are.na/v2';
+const API_V3 = 'https://api.are.na/v3';
 const DISPATCHES_DIR = path.join(__dirname, 'dispatches');
 
 async function fetchChannel(slug = CHANNEL_SLUG) {
-  // Are.na API paginates at 100 items
-  const url = `${API_BASE}/channels/${slug}?per=100`;
+  // Use v3 API for better metadata (v2 channel contents endpoint caches block titles)
+  const url = `${API_V3}/channels/${slug}/contents?per=100`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  const data = await res.json();
+  
+  // Transform v3 response to match v2 structure for compatibility
+  return {
+    contents: data.data.map(block => ({
+      ...block,
+      class: block.type,
+      content: block.content?.plain || block.content || '',
+      content_html: block.content?.html || '',
+      description: block.description?.plain || block.description || '',
+    }))
+  };
+}
+
+async function fetchChannelV2(slug) {
+  // Keep v2 for images channel (simpler structure)
+  const url = `${API_V2}/channels/${slug}?per=100`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
@@ -41,7 +61,7 @@ const CHANNEL_URLS = {
 
 async function fetchDispatchImages() {
   // Fetch images from the dispatch-images channel and map by day number
-  const channel = await fetchChannel(IMAGES_CHANNEL_SLUG);
+  const channel = await fetchChannelV2(IMAGES_CHANNEL_SLUG);
   const imagesByDay = {};
   
   for (const block of channel.contents) {
@@ -126,7 +146,7 @@ function markdownToHtml(md) {
 }
 
 function generateDispatchHtml(dispatch, prev, next, heroImage) {
-  const { number, date, title, contentHtml, blockId } = dispatch;
+  const { number, date, title, epigraph, contentHtml, blockId } = dispatch;
   const paddedNum = String(number).padStart(3, '0');
   
   const prevLink = prev 
@@ -216,6 +236,15 @@ function generateDispatchHtml(dispatch, prev, next, heroImage) {
       font-size: 0.85rem;
       color: var(--text-dim);
     }
+    .epigraph {
+      font-style: italic;
+      color: var(--text-dim);
+      margin: 1.5rem 0 2rem 0;
+      padding-left: 1rem;
+      border-left: 2px solid var(--accent-dim);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
     .hero-image {
       margin-bottom: 2rem;
     }
@@ -248,6 +277,8 @@ function generateDispatchHtml(dispatch, prev, next, heroImage) {
         <h1 class="dispatch-title">${title}</h1>
         <time class="dispatch-date">${date || 'Date unknown'}</time>
       </header>
+      
+      ${epigraph ? `<p class="epigraph">${epigraph}</p>` : ''}
       
       ${heroImage ? `
       <figure class="hero-image">
@@ -315,12 +346,16 @@ async function main() {
     .map(block => {
       const number = extractDispatchNumber(block.content);
       const date = extractDate(block.content);
-      const title = extractTitle(block.content);
+      // Prefer block title field over Location line
+      const title = block.title || extractTitle(block.content);
+      // Description field becomes the epigraph/koan
+      const epigraph = block.description || null;
       
       return {
         number,
         date,
         title,
+        epigraph,
         content: block.content,
         contentHtml: block.content_html,
         blockId: block.id
