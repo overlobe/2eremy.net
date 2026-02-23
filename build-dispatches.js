@@ -12,15 +12,53 @@ const fs = require('fs');
 const path = require('path');
 
 const CHANNEL_SLUG = 'exocortex-daily';
+const IMAGES_CHANNEL_SLUG = 'exocortex-dispatch-images';
 const API_BASE = 'https://api.are.na/v2';
 const DISPATCHES_DIR = path.join(__dirname, 'dispatches');
 
-async function fetchChannel() {
-  // Are.na API paginates at 100 items, we have 20 so one call is fine
-  const url = `${API_BASE}/channels/${CHANNEL_SLUG}?per=100`;
+async function fetchChannel(slug = CHANNEL_SLUG) {
+  // Are.na API paginates at 100 items
+  const url = `${API_BASE}/channels/${slug}?per=100`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
+}
+
+async function fetchDispatchImages() {
+  // Fetch images from the dispatch-images channel and map by day number
+  const channel = await fetchChannel(IMAGES_CHANNEL_SLUG);
+  const imagesByDay = {};
+  
+  for (const block of channel.contents) {
+    if (block.class !== 'Image' || block.state !== 'available') continue;
+    
+    // Extract day number from description (e.g., "Day 9 • From emergence")
+    const desc = block.description || '';
+    const match = desc.match(/Day\s+(\d+)/i);
+    if (!match) continue;
+    
+    const dayNum = parseInt(match[1], 10);
+    const image = block.image;
+    if (!image) continue;
+    
+    // Use medium size for hero (1200px) or fall back to original
+    const imageUrl = image.display?.url || image.original?.url || image.url;
+    if (!imageUrl) continue;
+    
+    // Extract source channel from description (e.g., "From emergence")
+    const sourceMatch = desc.match(/From\s+([^\s•]+)/i);
+    const sourceChannel = sourceMatch ? sourceMatch[1] : null;
+    
+    imagesByDay[dayNum] = {
+      url: imageUrl,
+      title: block.title || 'Untitled',
+      description: desc,
+      sourceChannel,
+      blockId: block.id
+    };
+  }
+  
+  return imagesByDay;
 }
 
 function extractDispatchNumber(content) {
@@ -52,7 +90,7 @@ function markdownToHtml(md) {
   return md;
 }
 
-function generateDispatchHtml(dispatch, prev, next) {
+function generateDispatchHtml(dispatch, prev, next, heroImage) {
   const { number, date, title, contentHtml, blockId } = dispatch;
   const paddedNum = String(number).padStart(3, '0');
   
@@ -143,6 +181,24 @@ function generateDispatchHtml(dispatch, prev, next) {
       font-size: 0.85rem;
       color: var(--text-dim);
     }
+    .hero-image {
+      margin-bottom: 2rem;
+    }
+    .hero-image img {
+      width: 100%;
+      max-height: 400px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .hero-image figcaption {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 0.5rem;
+      font-family: var(--mono);
+    }
+    .hero-image figcaption a {
+      color: var(--text-dim);
+    }
   </style>
 </head>
 <body>
@@ -157,6 +213,16 @@ function generateDispatchHtml(dispatch, prev, next) {
         <h1 class="dispatch-title">${title}</h1>
         <time class="dispatch-date">${date || 'Date unknown'}</time>
       </header>
+      
+      ${heroImage ? `
+      <figure class="hero-image">
+        <img src="${heroImage.url}" alt="${heroImage.title}" loading="lazy">
+        <figcaption>
+          ${heroImage.title}${heroImage.sourceChannel ? ` — from <a href="https://are.na/${heroImage.sourceChannel}" target="_blank">${heroImage.sourceChannel}</a>` : ''}
+          <a href="https://are.na/block/${heroImage.blockId}" target="_blank">↗</a>
+        </figcaption>
+      </figure>
+      ` : ''}
       
       <div class="dispatch-content">
         ${contentHtml}
@@ -195,10 +261,13 @@ function generateIndexList(dispatches) {
 }
 
 async function main() {
-  console.log('Fetching channel from Are.na...');
+  console.log('Fetching dispatches from Are.na...');
   const channel = await fetchChannel();
-  
   console.log(`Found ${channel.contents.length} blocks`);
+  
+  console.log('Fetching hero images...');
+  const imagesByDay = await fetchDispatchImages();
+  console.log(`Found ${Object.keys(imagesByDay).length} hero images`);
   
   // Ensure dispatches dir exists
   if (!fs.existsSync(DISPATCHES_DIR)) {
@@ -232,13 +301,15 @@ async function main() {
     const dispatch = dispatches[i];
     const prev = i > 0 ? dispatches[i - 1] : null;
     const next = i < dispatches.length - 1 ? dispatches[i + 1] : null;
+    const heroImage = imagesByDay[dispatch.number] || null;
     
-    const html = generateDispatchHtml(dispatch, prev, next);
+    const html = generateDispatchHtml(dispatch, prev, next, heroImage);
     const filename = `${String(dispatch.number).padStart(3, '0')}.html`;
     const filepath = path.join(DISPATCHES_DIR, filename);
     
     fs.writeFileSync(filepath, html);
-    console.log(`  ✓ ${filename} — Day ${dispatch.number}: ${dispatch.title}`);
+    const imgStatus = heroImage ? '🖼️' : '  ';
+    console.log(`  ${imgStatus} ${filename} — Day ${dispatch.number}: ${dispatch.title}`);
   }
   
   // Output index list
