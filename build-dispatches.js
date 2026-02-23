@@ -316,14 +316,28 @@ function generateIndexList(dispatches) {
     .sort((a, b) => b.number - a.number) // Newest first
     .map(d => {
       const paddedNum = String(d.number).padStart(3, '0');
-      return `      <li>
-        <a href="dispatches/${paddedNum}.html">Day ${d.number}: ${d.title}</a>
-        <span class="meta">${d.date || ''}</span>
-      </li>`;
+      return `        <li><a href="dispatches/${paddedNum}.html"><span class="day">Day ${d.number}: ${d.title}</span><span class="meta">${d.date || ''}</span></a></li>`;
     })
     .join('\n');
   
   return items;
+}
+
+function updateIndexHtml(dispatches) {
+  // Auto-update index.html with the dispatch list
+  const indexPath = path.join(__dirname, 'index.html');
+  let html = fs.readFileSync(indexPath, 'utf8');
+  
+  const listItems = generateIndexList(dispatches);
+  
+  // Replace content between <ul class="dispatch-list"> and </ul>
+  const listRegex = /(<ul class="dispatch-list">)[\s\S]*?(<\/ul>)/;
+  const newList = `$1\n${listItems}\n      $2`;
+  
+  html = html.replace(listRegex, newList);
+  
+  fs.writeFileSync(indexPath, html);
+  console.log('  ✓ Updated index.html');
 }
 
 async function main() {
@@ -382,9 +396,8 @@ async function main() {
     console.log(`  ${imgStatus} ${filename} — Day ${dispatch.number}: ${dispatch.title}`);
   }
   
-  // Output index list
-  console.log('\n--- Index HTML (paste into index.html) ---\n');
-  console.log(generateIndexList(dispatches));
+  // Update index.html automatically
+  updateIndexHtml(dispatches);
   
   console.log('\n✓ Done!');
 }
