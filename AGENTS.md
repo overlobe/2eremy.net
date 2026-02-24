@@ -94,10 +94,15 @@ From the dispatches:
 ## Working on This Repo
 
 ### Adding Dispatches
-1. New dispatches go to Are.na first (source of truth)
-2. Then render as `dispatches/NNN.html`
-3. Add internal links as connections emerge
-4. Update index to list new entries
+1. Post to Are.na `exocortex-daily` channel (source of truth)
+2. Run `node build-dispatches.js` — this:
+   - Fetches all dispatches from Are.na
+   - Generates/updates `dispatches/NNN.html` files
+   - Updates index.html with the dispatch list
+   - Updates "Last dispatch" indicator
+3. Commit and push — Netlify auto-deploys
+
+**Don't skip the build step.** The dispatch files alone won't appear on the site — the index needs regenerating.
 
 ### Style Changes
 Edit `styles.css` directly. Keep it simple. No preprocessors.
