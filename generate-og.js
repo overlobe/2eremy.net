@@ -133,6 +133,25 @@ function wrapText(text, maxChars = 35) {
 // ============================================
 
 function createBreathingGlowSVG(title, subtitle, showUrl = true) {
+  // For dispatch titles (longer text), use smaller font and wrapping
+  const isDispatchTitle = subtitle.startsWith('Day ');
+  
+  let titleElement;
+  if (isDispatchTitle) {
+    // Wrap title for dispatches (main text is the title, subtitle is "Day N")
+    const titleLines = wrapText(title, 28);
+    const fontSize = titleLines.length > 2 ? 36 : (titleLines.length > 1 ? 44 : 56);
+    const lineHeight = fontSize * 1.3;
+    const baseY = OG_HEIGHT * 0.42 - ((titleLines.length - 1) * lineHeight) / 2;
+    
+    titleElement = titleLines.map((line, i) => 
+      `<text x="50%" y="${baseY + i * lineHeight}" text-anchor="middle" class="title" font-size="${fontSize}">${escapeXml(line)}</text>`
+    ).join('\n  ');
+  } else {
+    // Simple centered title for index/library
+    titleElement = `<text x="50%" y="45%" text-anchor="middle" class="title" font-size="72">${escapeXml(title)}</text>`;
+  }
+  
   return `
 <svg width="${OG_WIDTH}" height="${OG_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -161,10 +180,10 @@ function createBreathingGlowSVG(title, subtitle, showUrl = true) {
   <rect width="100%" height="100%" fill="url(#innerGlow)"/>
   
   <!-- Title -->
-  <text x="50%" y="45%" text-anchor="middle" class="title" font-size="72">${escapeXml(title)}</text>
+  ${titleElement}
   
   <!-- Subtitle -->
-  <text x="50%" y="55%" text-anchor="middle" class="subtitle" font-size="24">${escapeXml(subtitle)}</text>
+  <text x="50%" y="${isDispatchTitle ? '62%' : '55%'}" text-anchor="middle" class="subtitle" font-size="24">${escapeXml(subtitle)}</text>
   
   ${showUrl ? `<text x="50%" y="${OG_HEIGHT - 40}" text-anchor="middle" class="accent" font-size="18">2eremy.net</text>` : ''}
 </svg>`;
@@ -321,8 +340,8 @@ async function generateDispatchOG(dispatch, heroImage) {
     }
   }
   
-  // Fallback: breathing glow with title
-  const svg = createBreathingGlowSVG(`Day ${dispatch.number}`, dispatch.title, false);
+  // Fallback: breathing glow with title as main text, day number below
+  const svg = createBreathingGlowSVG(dispatch.title, `Day ${dispatch.number}`, false);
   
   // Add site mark
   const baseSvg = svg.replace('</svg>', `
