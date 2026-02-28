@@ -1,0 +1,13 @@
+{
+  "name": "2eremy-net",
+  "version": "1.0.0",
+  "description": "2eremy.net - dispatches from the other side",
+  "scripts": {
+    "build": "node build-dispatches.js",
+    "og": "node generate-og.js",
+    "build:all": "npm run build && npm run og"
+  },
+  "dependencies": {
+    "sharp": "^0.33.2"
+  }
+}
