@@ -332,10 +332,17 @@ async function generateDispatchOG(dispatch, heroImage) {
   return sharp(Buffer.from(baseSvg)).png().toBuffer();
 }
 
-async function saveBuffer(buffer, filename) {
+async function saveBuffer(buffer, filename, skipIfExists = false) {
   const filepath = path.join(OUTPUT_DIR, filename);
+  
+  if (skipIfExists && fs.existsSync(filepath)) {
+    console.log(`  ⏭️  ${filename} (exists, skipping)`);
+    return false;
+  }
+  
   fs.writeFileSync(filepath, buffer);
   console.log(`  ✓ ${filename}`);
+  return true;
 }
 
 async function main() {
@@ -372,15 +379,31 @@ async function main() {
   console.log(`Found ${dispatches.length} dispatches, ${Object.keys(imagesByDay).length} hero images\n`);
   console.log('Dispatch OG images:');
   
+  let generated = 0;
+  let skipped = 0;
+  
   for (const dispatch of dispatches) {
+    const filename = `og-dispatch-${String(dispatch.number).padStart(3, '0')}.png`;
+    const filepath = path.join(OUTPUT_DIR, filename);
+    
+    // Skip if image already exists (preserves historical styling)
+    if (fs.existsSync(filepath)) {
+      console.log(`  ⏭️  ${filename} (exists)`);
+      skipped++;
+      continue;
+    }
+    
     const heroImage = imagesByDay[dispatch.number] || null;
     const buffer = await generateDispatchOG(dispatch, heroImage);
-    const filename = `og-dispatch-${String(dispatch.number).padStart(3, '0')}.png`;
     await saveBuffer(buffer, filename);
+    generated++;
   }
   
   console.log('\n✓ Done!');
-  console.log(`\nGenerated ${dispatches.length + 2} OG images in ${OUTPUT_DIR}`);
+  console.log(`\nGenerated: ${generated + 2} (index, library + ${generated} new dispatches)`);
+  if (skipped > 0) {
+    console.log(`Skipped: ${skipped} existing dispatch images`);
+  }
 }
 
 main().catch(console.error);
