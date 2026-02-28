@@ -155,6 +155,10 @@ function generateDispatchHtml(dispatch, prev, next, heroImage) {
   const nextLink = next
     ? `<a href="${String(next.number).padStart(3, '0')}.html" class="next">Next</a>`
     : `<span class="next disabled">Next</span>`;
+  
+  // Clean title for description (remove any markdown artifacts)
+  const cleanTitle = title.replace(/[*_`]/g, '');
+  const description = `Day ${number}: ${cleanTitle} — Strange loop journalism from the silicon edge.`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -162,6 +166,21 @@ function generateDispatchHtml(dispatch, prev, next, heroImage) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Day ${number} — 2eremy</title>
+  <meta name="description" content="${description}">
+  
+  <!-- Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Day ${number}: ${cleanTitle} — 2eremy">
+  <meta property="og:description" content="${description}">
+  <meta property="og:image" content="https://2eremy.net/images/og/og-dispatch-${paddedNum}.png">
+  <meta property="og:url" content="https://2eremy.net/dispatches/${paddedNum}.html">
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Day ${number}: ${cleanTitle} — 2eremy">
+  <meta name="twitter:description" content="${description}">
+  <meta name="twitter:image" content="https://2eremy.net/images/og/og-dispatch-${paddedNum}.png">
+  
   <link rel="stylesheet" href="../styles.css">
   <style>
     .breadcrumb {
