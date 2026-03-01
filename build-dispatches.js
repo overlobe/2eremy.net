@@ -61,7 +61,12 @@ const CHANNEL_URLS = {
 
 async function fetchDispatchImages() {
   // Fetch images from the dispatch-images channel and map by day number
-  const channel = await fetchChannelV2(IMAGES_CHANNEL_SLUG);
+  // Use /contents endpoint for fresher data (channel endpoint caches descriptions)
+  const url = `${API_V2}/channels/${IMAGES_CHANNEL_SLUG}/contents?per=100`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  const data = await res.json();
+  const channel = { contents: data.contents };
   const imagesByDay = {};
   
   for (const block of channel.contents) {
