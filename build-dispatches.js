@@ -57,7 +57,21 @@ const CHANNEL_URLS = {
   'nonlinear-temporalities': 'https://are.na/synthetic-ecologies-compendium/nonlinear-temporalities',
   'cult-aesthetics': 'https://are.na/zhexi-zhang/cult-aesthetics-of-decentralisation',
   'consciousness': 'https://are.na/chad-mazzola/consciousness-vmqbbhcq2fa',
+  'drawings-from-a-pattern-language': 'https://are.na/charles-broskoski/drawings-from-a-pattern-language',
 };
+
+// Load local image mappings (for blocks we don't own and can't edit descriptions on)
+function loadLocalImageMappings() {
+  const mappingPath = path.join(__dirname, 'dispatch-images.json');
+  if (fs.existsSync(mappingPath)) {
+    try {
+      return JSON.parse(fs.readFileSync(mappingPath, 'utf8'));
+    } catch (e) {
+      console.warn('  Warning: Could not parse dispatch-images.json:', e.message);
+    }
+  }
+  return {};
+}
 
 async function fetchDispatchImages() {
   // Fetch images from the dispatch-images channel and map by day number
@@ -69,25 +83,48 @@ async function fetchDispatchImages() {
   const channel = { contents: data.contents };
   const imagesByDay = {};
   
+  // Load local mappings first (these override Are.na descriptions)
+  const localMappings = loadLocalImageMappings();
+  
+  // Build a lookup of block ID -> day number from local mappings
+  const blockIdToDay = {};
+  for (const [day, mapping] of Object.entries(localMappings)) {
+    if (mapping.blockId) {
+      blockIdToDay[mapping.blockId] = parseInt(day, 10);
+    }
+  }
+  
   for (const block of channel.contents) {
     if (block.class !== 'Image' || block.state !== 'available') continue;
     
-    // Extract day number from description (e.g., "Day 9 • From emergence")
-    const desc = block.description || '';
-    const match = desc.match(/Day\s+(\d+)/i);
-    if (!match) continue;
-    
-    const dayNum = parseInt(match[1], 10);
     const image = block.image;
     if (!image) continue;
+    
+    // Check local mapping first (by block ID)
+    let dayNum = blockIdToDay[block.id];
+    let sourceChannelSlug = null;
+    let customTitle = null;
+    
+    if (dayNum && localMappings[dayNum]) {
+      // Use local mapping
+      sourceChannelSlug = localMappings[dayNum].sourceChannel || null;
+      customTitle = localMappings[dayNum].title || null;
+    } else {
+      // Fall back to parsing description (e.g., "Day 9 • From emergence")
+      const desc = block.description || '';
+      const match = desc.match(/Day\s+(\d+)/i);
+      if (!match) continue;
+      
+      dayNum = parseInt(match[1], 10);
+      
+      // Extract source channel from description
+      const sourceMatch = desc.match(/From\s+([^\s•]+)/i);
+      sourceChannelSlug = sourceMatch ? sourceMatch[1].toLowerCase() : null;
+    }
     
     // Use medium size for hero (1200px) or fall back to original
     const imageUrl = image.display?.url || image.original?.url || image.url;
     if (!imageUrl) continue;
-    
-    // Extract source channel from description (e.g., "From emergence" or "From horologium-florae")
-    const sourceMatch = desc.match(/From\s+([^\s•]+)/i);
-    const sourceChannelSlug = sourceMatch ? sourceMatch[1].toLowerCase() : null;
     
     // Look up full URL, or construct a search link as fallback
     const sourceChannelUrl = CHANNEL_URLS[sourceChannelSlug] || 
@@ -95,8 +132,8 @@ async function fetchDispatchImages() {
     
     imagesByDay[dayNum] = {
       url: imageUrl,
-      title: block.title || 'Untitled',
-      description: desc,
+      title: customTitle || block.title || 'Untitled',
+      description: block.description || '',
       sourceChannel: sourceChannelSlug,
       sourceChannelUrl,
       blockId: block.id
