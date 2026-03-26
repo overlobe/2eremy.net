@@ -110,16 +110,24 @@ async function fetchDispatchImages() {
       sourceChannelSlug = localMappings[dayNum].sourceChannel || null;
       customTitle = localMappings[dayNum].title || null;
     } else {
-      // Fall back to parsing description (e.g., "Day 9 • From emergence")
+      // Fall back to parsing description OR title (e.g., "Day 9 • From emergence")
       const desc = block.description || '';
-      const match = desc.match(/Day\s+(\d+)/i);
+      const title = block.title || '';
+      const textToSearch = desc || title;
+      const match = textToSearch.match(/Day\s+(\d+)/i);
       if (!match) continue;
       
       dayNum = parseInt(match[1], 10);
       
-      // Extract source channel from description
-      const sourceMatch = desc.match(/From\s+([^\s•]+)/i);
-      sourceChannelSlug = sourceMatch ? sourceMatch[1].toLowerCase() : null;
+      // Extract source channel from description or title (e.g., "From: Channel Name" or "From channel-slug")
+      const sourceMatch = textToSearch.match(/From[:\s]+([^•,\n]+)/i);
+      if (sourceMatch) {
+        // Clean up and extract channel slug or name
+        let sourceText = sourceMatch[1].trim();
+        // Handle comma-separated attribution (e.g., "Drawing with Mechanical Birds, Milan Grygar")
+        sourceText = sourceText.split(',')[0].trim();
+        sourceChannelSlug = sourceText.toLowerCase().replace(/\s+/g, '-');
+      }
     }
     
     // Use medium size for hero (1200px) or fall back to original
